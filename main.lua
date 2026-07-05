@@ -10,11 +10,8 @@ local game
 
 function love.load()
     math.randomseed(os.time())
-
-    -- Global game instance
     game = StateManager()
 
-    -- Register screens
     game:addScreen("town", TownScreen)
     game:addScreen("apartment", ApartmentScreen)
     game:addScreen("location", LocationScreen)
@@ -22,11 +19,7 @@ function love.load()
     game:addScreen("event", EventScreen)
     game:addScreen("shop", ShopScreen)
 
-    -- Initial state
     game:switch("town")
-    
-    love.window.setTitle("Little Lives")
-    love.window.setMode(800, 600)
 end
 
 function love.update(dt)
@@ -39,4 +32,10 @@ end
 
 function love.mousepressed(x, y, button)
     game:mousepressed(x, y, button)
+end
+
+function love.keypressed(key)
+    if key == "escape" then
+        love.event.quit()
+    end
 end
