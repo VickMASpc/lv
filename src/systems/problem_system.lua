@@ -4,9 +4,9 @@ local ProblemSystem = {}
 
 function ProblemSystem.update(world)
     for _, res in pairs(world.residents) do
-        res.problem_bubble = res.problem_bubble or { active = false }
+        local has_active = res.problem_bubble and (res.problem_bubble.active or res.problem_bubble.status == "active")
         
-        if not res.problem_bubble.active then
+        if not has_active then
             local is_queued = false
             for _, entry in ipairs(world.event_queue or {}) do
                 for _, p_id in ipairs(entry.participants or {}) do
@@ -36,7 +36,9 @@ function ProblemSystem.update(world)
 end
 
 function ProblemSystem.resolve(world, resident, item)
-    if not resident.problem_bubble.active then return false, "No active problem." end
+    if not resident.problem_bubble then return false, "No active problem." end
+    local is_active = resident.problem_bubble.active or resident.problem_bubble.status == "active"
+    if not is_active then return false, "No active problem." end
     
     if resident.problem_bubble.type == "hungry" then
         if item.type ~= "food" then

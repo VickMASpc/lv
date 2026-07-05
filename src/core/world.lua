@@ -90,13 +90,21 @@ local function normalizeResident(raw)
     resident.current_location = resident.current_location or resident.home_id
     resident.current_activity = resident.current_activity or "resting"
     
-    resident.problem_bubble = resident.problem_bubble or {
-        active = false,
-        type = nil,
-        created_day = nil,
-        created_phase = nil,
-        target_item_tag = nil
-    }
+    if resident.problem_bubble then
+        local pb = resident.problem_bubble
+        resident.problem_bubble = {
+            id = pb.id,
+            type = pb.type,
+            priority = tonumber(pb.priority),
+            created_day = tonumber(pb.created_day),
+            created_phase = tonumber(pb.created_phase),
+            prompt = pb.prompt,
+            target_need = pb.target_need,
+            status = pb.status,
+            active = pb.active,
+            target_item_tag = pb.target_item_tag
+        }
+    end
 
     RenderSystem.initResident(resident)
     return resident
