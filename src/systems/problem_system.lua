@@ -143,7 +143,8 @@ function ProblemSystem.resolveFoodProblem(world, resident, item)
 
     local result = {
         ok = true,
-        message = resident.name .. " accepted the food. Problem resolved.",
+        message = gift_result.message
+            .. " Food problem resolved. You earned $" .. tostring(FOOD_REWARD_MONEY) .. ".",
         problem_resolved = true,
         gift_result = gift_result,
         reward_money = FOOD_REWARD_MONEY,

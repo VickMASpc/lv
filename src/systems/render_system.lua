@@ -13,6 +13,11 @@ local ExpressionSystem = require("src.systems.expression_system")
 
 local RenderSystem = {}
 
+local function hasActiveProblem(resident)
+    local problem = resident.problem_bubble
+    return problem and (problem.active or problem.status == "active")
+end
+
 -- ---------------------------------------------------------------------------
 -- Internal sprite tables: each entry describes how to procedurally draw a
 -- body, hair, or outfit layer at the reference scale. Scale 1.0 = town map
@@ -198,7 +203,7 @@ function RenderSystem.drawTownDot(resident, cx, cy)
     -- Mini character (head + expression at small scale)
     RenderSystem.drawResident(resident, cx, cy - 2, 7)
 
-    if resident.problem_bubble and resident.problem_bubble.active then
+    if hasActiveProblem(resident) then
         love.graphics.setColor(1.0, 0.4, 0.4, 1.0)
         love.graphics.circle("fill", cx + 8, cy - 10, 5)
         love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
@@ -240,13 +245,12 @@ function RenderSystem.drawPortrait(resident, x, y, size)
     -- Character
     RenderSystem.drawResident(resident, cx, cy, head_r)
     
-    if resident.problem_bubble and resident.problem_bubble.active then
+    if hasActiveProblem(resident) then
         love.graphics.setColor(1.0, 0.4, 0.4, 1.0)
         love.graphics.circle("fill", cx + size * 0.3, cy - size * 0.2, head_r * 0.6)
         love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
         love.graphics.setLineWidth(2)
         love.graphics.circle("line", cx + size * 0.3, cy - size * 0.2, head_r * 0.6)
-        -- Just an exclamation mark for now
         love.graphics.print("!", cx + size * 0.3 - 3, cy - size * 0.2 - 7)
     end
 end

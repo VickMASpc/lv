@@ -13,8 +13,6 @@ end
 
 function LocationSystem.assignActivities(world)
     for _, res in pairs(world.residents) do
-        local old_loc = res.current_location
-
         if world.phase_index == 4 then
             res.current_location = res.home_id
             res.current_activity = "sleeping"
@@ -33,9 +31,6 @@ function LocationSystem.assignActivities(world)
             end
         end
 
-        if old_loc ~= res.current_location then
-            print(res.name .. " moved to " .. res.current_location)
-        end
     end
 end
 

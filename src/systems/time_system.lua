@@ -27,7 +27,6 @@ function TimeSystem.advance(world)
     EventSystem.generate(world)
     RelationshipSystem.refreshAll(world)
 
-    print("Time Advanced: Day " .. world.day .. ", " .. TimeSystem.PHASES[world.phase_index])
 end
 
 function TimeSystem.getPhaseName(world)
