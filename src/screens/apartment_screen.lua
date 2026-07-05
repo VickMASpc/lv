@@ -6,6 +6,8 @@ local MoodSystem   = require("src.systems.mood_system")
 local EventSystem  = require("src.systems.event_system")
 local TasteSystem  = require("src.systems.taste_system")
 local HappinessSystem = require("src.systems.happiness_system")
+local ProblemSystem = require("src.systems.problem_system")
+local item_data     = require("src.data.items")
 
 local ApartmentScreen = class()
 
@@ -21,6 +23,13 @@ local ACTIVITY_LABELS = {
     resting = "Resting",
     exploring = "Exploring",
 }
+
+local function getItem(id)
+    for _, item in ipairs(item_data) do
+        if item.id == id then return item end
+    end
+    return nil
+end
 
 local function needColor(v)
     if v >= 60 then return 0.30, 0.82, 0.45 end
@@ -51,6 +60,8 @@ function ApartmentScreen:init(state_manager)
         self:openTopEvent()
     end)
     self.gift_buttons = {}
+    self.problem_buttons = {}
+    self.problem_deferred = false
 end
 
 function ApartmentScreen:getResidentForLocation()
@@ -73,15 +84,9 @@ function ApartmentScreen:enter(params)
     self.status_color = Theme.colors.text_soft
 
     self.gift_buttons = {}
-    local item_data = require("src.data.items")
+    self.problem_buttons = {}
+    self.problem_deferred = false
     local gy = 120
-
-    local function getItem(id)
-        for _, itm in ipairs(item_data) do
-            if itm.id == id then return itm end
-        end
-        return nil
-    end
 
     for i, item_id in ipairs(self.mgr.world.inventory) do
         local itm = getItem(item_id)
@@ -101,6 +106,35 @@ function ApartmentScreen:enter(params)
             gy = gy + 34
         end
         if gy > 490 then break end
+    end
+
+    local problem = self.resident and self.resident.problem_bubble
+    local is_active = problem and (problem.active or problem.status == "active")
+    if is_active and problem.type == "need_food" then
+        local py = 350
+        for i, item_id in ipairs(self.mgr.world.inventory) do
+            local item = getItem(item_id)
+            if item and item.category == "food" then
+                local item_index = i
+                local button = Button(285, py, 230, 28, "Give " .. item.name, function()
+                    self:resolveFoodProblem(item_index, item)
+                end)
+                table.insert(self.problem_buttons, button)
+                py = py + 34
+            end
+        end
+
+        if #self.problem_buttons == 0 then
+            py = 390
+        end
+
+        self.maybe_later_button = Button(285, py, 230, 28, "Maybe later", function()
+            self.problem_deferred = true
+            self.status_message = "The request is still waiting."
+            self.status_color = Theme.colors.text_soft
+        end)
+    else
+        self.maybe_later_button = nil
     end
 end
 
@@ -127,23 +161,6 @@ function ApartmentScreen:giveItem(index, item)
         return
     end
 
-    local ProblemSystem = require("src.systems.problem_system")
-    local success, message
-    
-    if self.resident.problem_bubble and self.resident.problem_bubble.active then
-        success, message = ProblemSystem.resolve(self.mgr.world, self.resident, item)
-        if success then
-            table.remove(self.mgr.world.inventory, index)
-            self:enter({ location_id = self.location_id })
-            self.status_message = message
-            self.status_color = Theme.colors.success
-        else
-            self.status_message = message
-            self.status_color = Theme.colors.warning
-        end
-        return
-    end
-
     local result = HappinessSystem.applyGift(self.mgr.world, self.resident, item)
 
     table.remove(self.mgr.world.inventory, index)
@@ -157,6 +174,21 @@ function ApartmentScreen:giveItem(index, item)
     end
 end
 
+function ApartmentScreen:resolveFoodProblem(index, item)
+    if not self.resident or not item then return end
+
+    local result = ProblemSystem.resolveFoodProblem(self.mgr.world, self.resident, item)
+    if result.ok then
+        table.remove(self.mgr.world.inventory, index)
+        self:enter({ location_id = self.location_id })
+        self.status_message = result.message
+        self.status_color = Theme.colors.success
+    else
+        self.status_message = result.message
+        self.status_color = Theme.colors.warning
+    end
+end
+
 function ApartmentScreen:update(dt)
     self.back_button:update(dt)
     self.profile_button:setEnabled(self.resident ~= nil)
@@ -166,6 +198,14 @@ function ApartmentScreen:update(dt)
 
     for _, btn in ipairs(self.gift_buttons) do
         btn:update(dt)
+    end
+    if not self.problem_deferred then
+        for _, btn in ipairs(self.problem_buttons) do
+            btn:update(dt)
+        end
+        if self.maybe_later_button then
+            self.maybe_later_button:update(dt)
+        end
     end
 end
 
@@ -253,13 +293,24 @@ function ApartmentScreen:draw()
         love.graphics.print("Empty Apartment", 20, 14)
     end
     
-    if res and res.problem_bubble and res.problem_bubble.active then
+    local problem = res and res.problem_bubble
+    local problem_active = problem and (problem.active or problem.status == "active")
+    if problem_active and not self.problem_deferred then
+        love.graphics.setColor(0.10, 0.09, 0.14, 0.88)
+        love.graphics.rectangle("fill", 265, 270, 275, 220, 8)
         love.graphics.setFont(Theme.getFont(14))
         love.graphics.setColor(table.unpack(Theme.colors.warning))
-        if res.problem_bubble.type == "hungry" then
-            love.graphics.printf(res.name .. " is hungry! They want something to eat.", 30, 275, 480, "center")
+        if problem.type == "need_food" then
+            love.graphics.printf(problem.prompt or "I'm hungry. Could you give me something to eat?", 280, 292, 245, "center")
+            for _, btn in ipairs(self.problem_buttons) do btn:draw() end
+            if #self.problem_buttons == 0 then
+                love.graphics.setFont(Theme.getFont(11))
+                love.graphics.setColor(table.unpack(Theme.colors.text_soft))
+                love.graphics.printf("You do not have any food items.", 280, 350, 245, "center")
+            end
+            if self.maybe_later_button then self.maybe_later_button:draw() end
         else
-            love.graphics.printf(res.name .. " has a problem!", 30, 275, 480, "center")
+            love.graphics.printf(problem.prompt or (res.name .. " has a problem!"), 280, 292, 245, "center")
         end
     end
 
@@ -312,6 +363,12 @@ function ApartmentScreen:mousepressed(x, y, button)
 
     for _, btn in ipairs(self.gift_buttons) do
         if btn:mousepressed(x, y, button) then return end
+    end
+    if not self.problem_deferred then
+        for _, btn in ipairs(self.problem_buttons) do
+            if btn:mousepressed(x, y, button) then return end
+        end
+        if self.maybe_later_button and self.maybe_later_button:mousepressed(x, y, button) then return end
     end
 end
 

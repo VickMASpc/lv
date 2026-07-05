@@ -16,7 +16,9 @@ end
 
 function NeedSystem.update(world)
     for _, res in pairs(world.residents) do
-        res.needs.hunger = math.max(0, res.needs.hunger - 10)
+        if res.needs.hunger ~= nil then
+            res.needs.hunger = math.max(0, res.needs.hunger - 10)
+        end
         res.needs.energy = math.max(0, res.needs.energy - 5)
         res.needs.fun = math.max(0, res.needs.fun - 8)
         res.needs.comfort = math.max(0, res.needs.comfort - 4)

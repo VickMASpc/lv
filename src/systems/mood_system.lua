@@ -16,7 +16,7 @@ end
 
 function MoodSystem.update(world)
     for _, res in pairs(world.residents) do
-        if res.needs.hunger < 20 then
+        if res.needs.hunger ~= nil and res.needs.hunger < 20 then
             res.mood.happiness = math.max(0, res.mood.happiness - 10)
             res.mood.stress = math.min(100, res.mood.stress + 10)
         end

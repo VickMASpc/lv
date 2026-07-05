@@ -120,6 +120,27 @@ local function drawAlert(loc, count)
     love.graphics.printf(tostring(count), bx - 8, by - 7, 16, "center")
 end
 
+local function locationHasResidentProblem(world, location_id)
+    for _, resident in pairs(world.residents or {}) do
+        local problem = resident.problem_bubble
+        local is_active = problem and (problem.active or problem.status == "active")
+        if resident.home_id == location_id and is_active then
+            return true
+        end
+    end
+    return false
+end
+
+local function drawProblemAlert(loc)
+    local bx = loc.x + 4
+    local by = loc.y - 12
+    love.graphics.setColor(1.0, 0.78, 0.18, 0.96)
+    love.graphics.circle("fill", bx, by, 12)
+    love.graphics.setColor(0.30, 0.20, 0.05, 1)
+    love.graphics.setFont(Theme.getFont(12))
+    love.graphics.printf("!", bx - 8, by - 7, 16, "center")
+end
+
 local function drawLabel(loc)
     love.graphics.setFont(Theme.getFont(11))
     love.graphics.setColor(0.10, 0.07, 0.05, 0.65)
@@ -216,6 +237,9 @@ function TownScreen:draw()
         local events_here = EventSystem.getEntriesForLocation(self.mgr.world, loc.id)
         if #events_here > 0 then
             drawAlert(loc, #events_here)
+        end
+        if loc.type == "residence" and locationHasResidentProblem(self.mgr.world, loc.id) then
+            drawProblemAlert(loc)
         end
         drawResidentsInLocation(loc, self.mgr.world)
         drawLabel(loc)
