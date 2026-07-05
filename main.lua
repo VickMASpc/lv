@@ -1,3 +1,7 @@
+if not table.unpack and unpack then
+    table.unpack = unpack
+end
+
 local StateManager = require("src.core.state")
 local TownScreen = require("src.screens.town_screen")
 local ApartmentScreen = require("src.screens.apartment_screen")
