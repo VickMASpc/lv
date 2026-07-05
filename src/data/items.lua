@@ -2,6 +2,7 @@ return {
     {
         id = "pizza",
         name = "Hot Pizza",
+        category = "food",
         description = "Greasy and delicious. Cures hunger instantly.",
         cost = 15,
         taste_tags = { "food", "comfort" },
@@ -13,6 +14,7 @@ return {
     {
         id = "tea",
         name = "Green Tea",
+        category = "drink",
         description = "Very calming. Reduces stress.",
         cost = 5,
         taste_tags = { "comfort", "bitter" },
@@ -24,6 +26,7 @@ return {
     {
         id = "video_game",
         name = "New Game",
+        category = "toy",
         description = "A lot of fun, but takes a lot of energy.",
         cost = 60,
         taste_tags = { "hobby", "games" },
@@ -35,6 +38,7 @@ return {
     {
         id = "flowers",
         name = "Fresh Flowers",
+        category = "decoration",
         description = "A great gift to show affection.",
         cost = 25,
         taste_tags = { "flowers", "cozy" },

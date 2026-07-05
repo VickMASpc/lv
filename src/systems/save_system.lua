@@ -37,10 +37,6 @@ function SaveSystem.load(slot)
         return nil, "The save file is not valid."
     end
 
-    if world.version ~= World.SAVE_VERSION then
-        return nil, "This save file uses an older format."
-    end
-
     return World.normalize(world), "Game loaded from " .. filename .. "."
 end
 

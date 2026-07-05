@@ -3,9 +3,46 @@ local Button             = require("src.ui.button")
 local Theme              = require("src.ui.theme")
 local RelationshipSystem = require("src.systems.relationship_system")
 local RenderSystem       = require("src.systems.render_system")
-local TasteSystem        = require("src.systems.taste_system")
+local item_data          = require("src.data.items")
 
 local ProfileScreen = class()
+
+local MAX_KNOWN_TASTES = 6
+
+local function buildItemNameMap()
+    local by_id = {}
+    for _, item in ipairs(item_data) do
+        by_id[item.id] = item.name
+    end
+    return by_id
+end
+
+local ITEM_NAMES = buildItemNameMap()
+
+local function getProgression(resident)
+    local progression = resident.progression or {}
+    local level = tonumber(resident.level) or tonumber(progression.happiness_level) or 1
+    local xp = tonumber(resident.happiness_xp) or tonumber(progression.happiness_xp) or 0
+    return level, xp
+end
+
+local function getKnownTastes(resident)
+    local discovered = resident.discovered_preferences or {}
+    local known_tastes = {}
+
+    for item_id, reaction in pairs(discovered) do
+        table.insert(known_tastes, {
+            item_name = ITEM_NAMES[item_id] or item_id,
+            reaction = reaction,
+        })
+    end
+
+    table.sort(known_tastes, function(a, b)
+        return a.item_name < b.item_name
+    end)
+
+    return known_tastes
+end
 
 function ProfileScreen:init(state_manager)
     self.mgr = state_manager
@@ -76,27 +113,27 @@ function ProfileScreen:draw()
 end
 
 function ProfileScreen:drawStatus()
-    local progression = self.resident.progression or { happiness_xp = 0, happiness_level = 1 }
-    local threshold = TasteSystem.getLevelThreshold(progression.happiness_level)
-    local summary = TasteSystem.getKnownPreferenceSummary(self.resident)
+    local level, xp = getProgression(self.resident)
+    local threshold = 100
+    local known_tastes = getKnownTastes(self.resident)
 
     love.graphics.setFont(Theme.getFont(16))
-    love.graphics.print("Current Activity: " .. self.resident.current_activity, 50, 150)
-    love.graphics.print("Happiness Level: " .. progression.happiness_level, 50, 176)
+    love.graphics.print("Current Activity: " .. (self.resident.current_activity or "resting"), 50, 150)
+    love.graphics.print("Level: " .. level, 50, 176)
 
     love.graphics.setFont(Theme.getFont(12))
     love.graphics.setColor(0.6, 0.6, 0.6)
     love.graphics.rectangle("line", 50, 202, 180, 15)
     love.graphics.setColor(table.unpack(Theme.colors.level_up))
-    love.graphics.rectangle("fill", 50, 202, (progression.happiness_xp / threshold) * 180, 15)
+    love.graphics.rectangle("fill", 50, 202, math.min(1, xp / threshold) * 180, 15)
     love.graphics.setColor(1, 1, 1)
-    love.graphics.print("XP: " .. progression.happiness_xp .. " / " .. threshold, 240, 200)
+    love.graphics.print("Happiness: " .. xp .. " / " .. threshold, 240, 200)
 
     love.graphics.setFont(Theme.getFont(16))
     love.graphics.print("Needs", 50, 232)
     love.graphics.setFont(Theme.getFont(12))
     local y = 262
-    for key, value in pairs(self.resident.needs) do
+    for key, value in pairs(self.resident.needs or {}) do
         love.graphics.setColor(0.6, 0.6, 0.6)
         love.graphics.rectangle("line", 50, y, 150, 15)
         love.graphics.setColor(0.4, 0.8, 0.4)
@@ -111,18 +148,40 @@ function ProfileScreen:drawStatus()
     love.graphics.print("Mood", 450, 150)
     love.graphics.setFont(Theme.getFont(12))
     y = 180
-    for key, value in pairs(self.resident.mood) do
+    for key, value in pairs(self.resident.mood or {}) do
         love.graphics.print(key .. ": " .. value .. "%", 450, y)
         y = y + 20
     end
 
-    love.graphics.setFont(Theme.getFont(14))
-    love.graphics.setColor(table.unpack(Theme.colors.success))
-    love.graphics.print("Known Likes: " .. (#summary.likes > 0 and table.concat(summary.likes, ", ") or "None yet"), 450, 360)
-    love.graphics.setColor(table.unpack(Theme.colors.error))
-    love.graphics.print("Known Dislikes: " .. (#summary.dislikes > 0 and table.concat(summary.dislikes, ", ") or "None yet"), 450, 390)
-    love.graphics.setColor(table.unpack(Theme.colors.text_soft))
-    love.graphics.print("Known Item Notes: " .. (#summary.items > 0 and table.concat(summary.items, ", ") or "None yet"), 450, 420)
+    love.graphics.setFont(Theme.getFont(16))
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("Known Tastes", 450, 360)
+    love.graphics.setFont(Theme.getFont(12))
+
+    if #known_tastes == 0 then
+        love.graphics.setColor(table.unpack(Theme.colors.text_soft))
+        love.graphics.printf("No known tastes yet. Try giving gifts.", 450, 388, 300, "left")
+    else
+        y = 388
+        for i = 1, math.min(#known_tastes, MAX_KNOWN_TASTES) do
+            local taste = known_tastes[i]
+            local reaction_color = Theme.colors.text_soft
+            if taste.reaction == "loved" or taste.reaction == "liked" then
+                reaction_color = Theme.colors.success
+            elseif taste.reaction == "neutral" then
+                reaction_color = Theme.colors.accent
+            elseif taste.reaction == "disliked" or taste.reaction == "hated" then
+                reaction_color = Theme.colors.warning
+            end
+
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.print(taste.item_name, 450, y)
+            love.graphics.setColor(table.unpack(reaction_color))
+            love.graphics.print(taste.reaction, 620, y)
+            y = y + 22
+        end
+    end
+
     love.graphics.setColor(1, 1, 1)
     love.graphics.print("Quirks: " .. table.concat(self.resident.quirks or {}, ", "), 450, 460)
     love.graphics.print("Likes: " .. table.concat(self.resident.likes or {}, ", "), 450, 490)

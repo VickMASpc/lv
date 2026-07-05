@@ -5,6 +5,7 @@ local RenderSystem = require("src.systems.render_system")
 local MoodSystem   = require("src.systems.mood_system")
 local EventSystem  = require("src.systems.event_system")
 local TasteSystem  = require("src.systems.taste_system")
+local HappinessSystem = require("src.systems.happiness_system")
 
 local ApartmentScreen = class()
 
@@ -120,19 +121,22 @@ end
 
 function ApartmentScreen:giveItem(index, item)
     if not self.resident then return end
+    if not item then
+        self.status_message = "That item could not be found."
+        self.status_color = Theme.colors.warning
+        return
+    end
 
-    local result = TasteSystem.resolveGift(self.mgr.world, self.resident, item)
+    local result = HappinessSystem.applyGift(self.mgr.world, self.resident, item)
 
     table.remove(self.mgr.world.inventory, index)
     self:enter({ location_id = self.location_id })
     self.status_message = result.message
 
-    if result.reaction == "love" or result.reaction == "like" then
-        self.status_color = Theme.colors.success
-    elseif result.reaction == "neutral" then
-        self.status_color = Theme.colors.text_soft
+    if result.reaction == "disliked" or result.reaction == "hated" then
+        self.status_color = Theme.colors.warning
     else
-        self.status_color = Theme.colors.error
+        self.status_color = Theme.colors.success
     end
 end
 
@@ -219,12 +223,13 @@ function ApartmentScreen:draw()
         love.graphics.print("Home: " .. self.location_id, 220, 36)
 
         local primary_mood = MoodSystem.getPrimaryMood(res)
+        local resident_level = res.level or (res.progression and res.progression.happiness_level) or 1
         love.graphics.setColor(color[1], color[2], color[3], 0.25)
         love.graphics.rectangle("fill", 580, 14, 140, 28, 6)
         love.graphics.setColor(1, 1, 1, 0.9)
         love.graphics.printf("Mood: " .. primary_mood, 580, 20, 140, "center")
         love.graphics.setColor(table.unpack(Theme.colors.level_up))
-        love.graphics.printf("Lv " .. tostring(res.progression.happiness_level), 725, 20, 55, "right")
+        love.graphics.printf("Lv " .. tostring(resident_level), 725, 20, 55, "right")
     else
         love.graphics.setFont(Theme.getFont(22))
         love.graphics.setColor(0.70, 0.70, 0.75)
@@ -237,7 +242,7 @@ function ApartmentScreen:draw()
         love.graphics.print("NEEDS", 30, 68)
 
         local ny = 88
-        for key, value in pairs(res.needs) do
+        for key, value in pairs(res.needs or {}) do
             drawNeedBar(30, ny, 120, 10, key, value)
             ny = ny + 22
             if ny > 460 then break end

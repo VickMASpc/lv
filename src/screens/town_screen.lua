@@ -17,6 +17,15 @@ local BUILDING_THEMES = {
 
 local THEME_DEFAULT = { wall = {0.55, 0.55, 0.55}, roof = {0.35, 0.35, 0.35}, window = {0.90, 0.90, 1.0} }
 
+local function latestNewsText(world)
+    local news_log = world.news_log or {}
+    local latest = news_log[#news_log]
+    if latest and latest.text then
+        return latest.text
+    end
+    return "Town news is quiet for now."
+end
+
 function TownScreen:init(state_manager)
     self.mgr = state_manager
     self.locations = locations
@@ -215,7 +224,7 @@ function TownScreen:draw()
     self:drawLighting()
 
     love.graphics.setColor(0.08, 0.06, 0.10, 0.82)
-    love.graphics.rectangle("fill", 0, 0, 800, 64)
+    love.graphics.rectangle("fill", 0, 0, 800, 82)
     love.graphics.setColor(1, 1, 1)
     love.graphics.setFont(Theme.getFont(16))
     local phase_name = TimeSystem.getPhaseName(self.mgr.world)
@@ -226,8 +235,12 @@ function TownScreen:draw()
     if self.status_message ~= "" then
         love.graphics.setFont(Theme.getFont(12))
         love.graphics.setColor(table.unpack(self.status_color))
-        love.graphics.printf(self.status_message, 250, 48, 520, "right")
+        love.graphics.printf(self.status_message, 250, 46, 520, "right")
     end
+
+    love.graphics.setFont(Theme.getFont(11))
+    love.graphics.setColor(table.unpack(Theme.colors.text_soft))
+    love.graphics.printf("News: " .. latestNewsText(self.mgr.world), 20, 62, 760, "left")
 
     self.advance_button:draw()
     self.shop_button:draw()

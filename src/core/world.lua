@@ -7,6 +7,7 @@ World.SAVE_VERSION = 3
 World.DEFAULT_PHASE_INDEX = 1
 World.DEFAULT_MONEY = 100
 World.MAX_QUEUE_SIZE = 5
+World.NEWS_LOG_CAP = 20
 
 local function cloneTable(value)
     if type(value) ~= "table" then
@@ -20,6 +21,16 @@ local function cloneTable(value)
     return copy
 end
 
+local function buildResidentDefaultsById()
+    local defaults = {}
+    for _, resident in ipairs(residents_data) do
+        defaults[resident.id] = cloneTable(resident)
+    end
+    return defaults
+end
+
+local RESIDENT_DEFAULTS = buildResidentDefaultsById()
+
 local function normalizePreferenceBuckets(preferences)
     local normalized = cloneTable(preferences or {})
     normalized.loved = normalized.loved or {}
@@ -29,8 +40,34 @@ local function normalizePreferenceBuckets(preferences)
     return normalized
 end
 
+local function trimNewsLog(news_log)
+    while #news_log > World.NEWS_LOG_CAP do
+        table.remove(news_log, 1)
+    end
+    return news_log
+end
+
+local function seedNewsLogFromFeed(world)
+    local seeded = {}
+    for _, entry in ipairs(world.news_feed or {}) do
+        if entry and entry.text then
+            table.insert(seeded, {
+                day = tonumber(entry.day) or world.day or 1,
+                phase_index = tonumber(entry.phase_index) or tonumber(world.phase_index) or World.DEFAULT_PHASE_INDEX,
+                text = entry.text,
+            })
+        end
+    end
+    return trimNewsLog(seeded)
+end
+
 local function normalizeResident(raw)
     local resident = cloneTable(raw)
+    local defaults = RESIDENT_DEFAULTS[resident.id] or {}
+    resident.appearance = resident.appearance or cloneTable(defaults.appearance) or {}
+    resident.personality = resident.personality or cloneTable(defaults.personality) or {}
+    resident.needs = resident.needs or cloneTable(defaults.needs) or {}
+    resident.mood = resident.mood or cloneTable(defaults.mood) or {}
     resident.memories = resident.memories or {}
     resident.flags = resident.flags or {}
     resident.taste_profile = resident.taste_profile or {}
@@ -99,6 +136,7 @@ function World.new()
         event_cooldowns = {},
         next_event_instance_id = 1,
         next_memory_id = 1,
+        news_log = {},
         news_feed = {},
         next_news_id = 1,
     }
@@ -118,8 +156,14 @@ function World.normalize(loaded_world)
     world.event_cooldowns = world.event_cooldowns or {}
     world.next_event_instance_id = tonumber(world.next_event_instance_id) or 1
     world.next_memory_id = tonumber(world.next_memory_id) or 1
+    world.news_log = world.news_log or {}
     world.news_feed = world.news_feed or {}
     world.next_news_id = tonumber(world.next_news_id) or 1
+    if #world.news_log == 0 and #world.news_feed > 0 then
+        world.news_log = seedNewsLogFromFeed(world)
+    else
+        trimNewsLog(world.news_log)
+    end
 
     local residents_source = {}
     if world.residents then
@@ -162,6 +206,7 @@ function World.serialize(world)
         event_cooldowns = world.event_cooldowns,
         next_event_instance_id = world.next_event_instance_id,
         next_memory_id = world.next_memory_id,
+        news_log = cloneTable(world.news_log),
         news_feed = cloneTable(world.news_feed),
         next_news_id = world.next_news_id,
     }
