@@ -48,6 +48,15 @@ return {
             tags = {},
             items = {}
         },
+        happiness_xp = 0,
+        level = 1,
+        preferences = {
+            loved = { "tea" },
+            liked = { "video_game" },
+            disliked = { "pizza" },
+            hated = { "flowers" }
+        },
+        discovered_preferences = {},
         progression = {
             happiness_xp = 0,
             happiness_level = 1
@@ -104,6 +113,15 @@ return {
             tags = {},
             items = {}
         },
+        happiness_xp = 0,
+        level = 1,
+        preferences = {
+            loved = { "pizza" },
+            liked = { "tea" },
+            disliked = { "video_game" },
+            hated = { "flowers" }
+        },
+        discovered_preferences = {},
         progression = {
             happiness_xp = 0,
             happiness_level = 1

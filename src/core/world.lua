@@ -20,6 +20,15 @@ local function cloneTable(value)
     return copy
 end
 
+local function normalizePreferenceBuckets(preferences)
+    local normalized = cloneTable(preferences or {})
+    normalized.loved = normalized.loved or {}
+    normalized.liked = normalized.liked or {}
+    normalized.disliked = normalized.disliked or {}
+    normalized.hated = normalized.hated or {}
+    return normalized
+end
+
 local function normalizeResident(raw)
     local resident = cloneTable(raw)
     resident.memories = resident.memories or {}
@@ -31,8 +40,16 @@ local function normalizeResident(raw)
     resident.known_preferences.tags = resident.known_preferences.tags or {}
     resident.known_preferences.items = resident.known_preferences.items or {}
     resident.progression = resident.progression or {}
-    resident.progression.happiness_xp = tonumber(resident.progression.happiness_xp) or 0
-    resident.progression.happiness_level = tonumber(resident.progression.happiness_level) or 1
+    local progression_xp = tonumber(resident.progression.happiness_xp)
+    local progression_level = tonumber(resident.progression.happiness_level)
+    resident.happiness_xp = tonumber(resident.happiness_xp)
+    resident.level = tonumber(resident.level)
+    resident.happiness_xp = resident.happiness_xp or progression_xp or 0
+    resident.level = resident.level or progression_level or 1
+    resident.progression.happiness_xp = resident.happiness_xp
+    resident.progression.happiness_level = resident.level
+    resident.preferences = normalizePreferenceBuckets(resident.preferences)
+    resident.discovered_preferences = resident.discovered_preferences or {}
     resident.current_location = resident.current_location or resident.home_id
     resident.current_activity = resident.current_activity or "resting"
     RenderSystem.initResident(resident)
