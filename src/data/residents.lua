@@ -30,6 +30,28 @@ return {
             embarrassment = 10, excitement = 40, confidence = 50,
             suspicion = 5, affection = 30
         },
+        taste_profile = {
+            tags = {
+                food = 15,
+                comfort = 10,
+                cozy = 35,
+                hobby = 40,
+                games = 65,
+                flowers = -20,
+                bitter = -10,
+            },
+            items = {
+                flowers = -45
+            }
+        },
+        known_preferences = {
+            tags = {},
+            items = {}
+        },
+        progression = {
+            happiness_xp = 0,
+            happiness_level = 1
+        },
         memories = {},
         flags = {}
     },
@@ -63,6 +85,28 @@ return {
             happiness = 75, stress = 15, loneliness = 10, anger = 0,
             embarrassment = 0, excitement = 20, confidence = 85,
             suspicion = 0, affection = 40
+        },
+        taste_profile = {
+            tags = {
+                food = 45,
+                comfort = 30,
+                cozy = 10,
+                hobby = 15,
+                games = -25,
+                flowers = 55,
+                bitter = 40,
+            },
+            items = {
+                tea = 70
+            }
+        },
+        known_preferences = {
+            tags = {},
+            items = {}
+        },
+        progression = {
+            happiness_xp = 0,
+            happiness_level = 1
         },
         memories = {},
         flags = {}

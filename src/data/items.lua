@@ -4,6 +4,7 @@ return {
         name = "Hot Pizza",
         description = "Greasy and delicious. Cures hunger instantly.",
         cost = 15,
+        taste_tags = { "food", "comfort" },
         effects = {
             hunger = 50,
             happiness = 10
@@ -14,6 +15,7 @@ return {
         name = "Green Tea",
         description = "Very calming. Reduces stress.",
         cost = 5,
+        taste_tags = { "comfort", "bitter" },
         effects = {
             stress = -20,
             comfort = 10
@@ -24,6 +26,7 @@ return {
         name = "New Game",
         description = "A lot of fun, but takes a lot of energy.",
         cost = 60,
+        taste_tags = { "hobby", "games" },
         effects = {
             fun = 80,
             energy = -30
@@ -34,6 +37,7 @@ return {
         name = "Fresh Flowers",
         description = "A great gift to show affection.",
         cost = 25,
+        taste_tags = { "flowers", "cozy" },
         effects = {
             happiness = 20,
             affection_bonus = 10 -- Special tag for gifting

@@ -3,7 +3,7 @@ local RenderSystem = require("src.systems.render_system")
 
 local World = {}
 
-World.SAVE_VERSION = 2
+World.SAVE_VERSION = 3
 World.DEFAULT_PHASE_INDEX = 1
 World.DEFAULT_MONEY = 100
 World.MAX_QUEUE_SIZE = 5
@@ -24,6 +24,15 @@ local function normalizeResident(raw)
     local resident = cloneTable(raw)
     resident.memories = resident.memories or {}
     resident.flags = resident.flags or {}
+    resident.taste_profile = resident.taste_profile or {}
+    resident.taste_profile.tags = resident.taste_profile.tags or {}
+    resident.taste_profile.items = resident.taste_profile.items or {}
+    resident.known_preferences = resident.known_preferences or {}
+    resident.known_preferences.tags = resident.known_preferences.tags or {}
+    resident.known_preferences.items = resident.known_preferences.items or {}
+    resident.progression = resident.progression or {}
+    resident.progression.happiness_xp = tonumber(resident.progression.happiness_xp) or 0
+    resident.progression.happiness_level = tonumber(resident.progression.happiness_level) or 1
     resident.current_location = resident.current_location or resident.home_id
     resident.current_activity = resident.current_activity or "resting"
     RenderSystem.initResident(resident)
@@ -73,6 +82,8 @@ function World.new()
         event_cooldowns = {},
         next_event_instance_id = 1,
         next_memory_id = 1,
+        news_feed = {},
+        next_news_id = 1,
     }
 end
 
@@ -90,6 +101,8 @@ function World.normalize(loaded_world)
     world.event_cooldowns = world.event_cooldowns or {}
     world.next_event_instance_id = tonumber(world.next_event_instance_id) or 1
     world.next_memory_id = tonumber(world.next_memory_id) or 1
+    world.news_feed = world.news_feed or {}
+    world.next_news_id = tonumber(world.next_news_id) or 1
 
     local residents_source = {}
     if world.residents then
@@ -132,6 +145,8 @@ function World.serialize(world)
         event_cooldowns = world.event_cooldowns,
         next_event_instance_id = world.next_event_instance_id,
         next_memory_id = world.next_memory_id,
+        news_feed = cloneTable(world.news_feed),
+        next_news_id = world.next_news_id,
     }
 
     for _, resident in pairs(world.residents) do

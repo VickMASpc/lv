@@ -4,6 +4,7 @@ local Theme        = require("src.ui.theme")
 local RenderSystem = require("src.systems.render_system")
 local MoodSystem   = require("src.systems.mood_system")
 local EventSystem  = require("src.systems.event_system")
+local TasteSystem  = require("src.systems.taste_system")
 
 local ApartmentScreen = class()
 
@@ -85,7 +86,14 @@ function ApartmentScreen:enter(params)
         local itm = getItem(item_id)
         if itm then
             local item_index = i
-            local button = Button(570, gy, 210, 28, "Give " .. itm.name, function()
+            local label = "Give " .. itm.name
+            if self.resident then
+                local known_reaction = TasteSystem.getKnownReactionForItem(self.resident, itm)
+                if known_reaction then
+                    label = label .. " (" .. known_reaction .. ")"
+                end
+            end
+            local button = Button(570, gy, 210, 28, label, function()
                 self:giveItem(item_index, itm)
             end)
             table.insert(self.gift_buttons, button)
@@ -113,18 +121,19 @@ end
 function ApartmentScreen:giveItem(index, item)
     if not self.resident then return end
 
-    for key, delta in pairs(item.effects) do
-        if self.resident.needs[key] ~= nil then
-            self.resident.needs[key] = math.max(0, math.min(100, self.resident.needs[key] + delta))
-        elseif self.resident.mood[key] ~= nil then
-            self.resident.mood[key] = math.max(0, math.min(100, self.resident.mood[key] + delta))
-        end
-    end
+    local result = TasteSystem.resolveGift(self.mgr.world, self.resident, item)
 
     table.remove(self.mgr.world.inventory, index)
     self:enter({ location_id = self.location_id })
-    self.status_message = "Gave " .. item.name .. " to " .. self.resident.name .. "."
-    self.status_color = Theme.colors.success
+    self.status_message = result.message
+
+    if result.reaction == "love" or result.reaction == "like" then
+        self.status_color = Theme.colors.success
+    elseif result.reaction == "neutral" then
+        self.status_color = Theme.colors.text_soft
+    else
+        self.status_color = Theme.colors.error
+    end
 end
 
 function ApartmentScreen:update(dt)
@@ -214,6 +223,8 @@ function ApartmentScreen:draw()
         love.graphics.rectangle("fill", 580, 14, 140, 28, 6)
         love.graphics.setColor(1, 1, 1, 0.9)
         love.graphics.printf("Mood: " .. primary_mood, 580, 20, 140, "center")
+        love.graphics.setColor(table.unpack(Theme.colors.level_up))
+        love.graphics.printf("Lv " .. tostring(res.progression.happiness_level), 725, 20, 55, "right")
     else
         love.graphics.setFont(Theme.getFont(22))
         love.graphics.setColor(0.70, 0.70, 0.75)

@@ -1,5 +1,17 @@
 local MemorySystem = {}
 
+local function cloneTable(value)
+    if type(value) ~= "table" then
+        return value
+    end
+
+    local copy = {}
+    for key, nested in pairs(value) do
+        copy[key] = cloneTable(nested)
+    end
+    return copy
+end
+
 function MemorySystem.add(world, resident, memory_data)
     local memory = {
         id = "m" .. tostring(world.next_memory_id),
@@ -10,7 +22,8 @@ function MemorySystem.add(world, resident, memory_data)
         day = world.day,
         location = memory_data.location or resident.current_location,
         tags = memory_data.tags or {},
-        decay_rate = memory_data.decay_rate or 5
+        decay_rate = memory_data.decay_rate or 5,
+        metadata = cloneTable(memory_data.metadata or {})
     }
 
     world.next_memory_id = world.next_memory_id + 1

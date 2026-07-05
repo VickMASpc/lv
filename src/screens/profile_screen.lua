@@ -3,6 +3,7 @@ local Button             = require("src.ui.button")
 local Theme              = require("src.ui.theme")
 local RelationshipSystem = require("src.systems.relationship_system")
 local RenderSystem       = require("src.systems.render_system")
+local TasteSystem        = require("src.systems.taste_system")
 
 local ProfileScreen = class()
 
@@ -75,12 +76,26 @@ function ProfileScreen:draw()
 end
 
 function ProfileScreen:drawStatus()
+    local progression = self.resident.progression or { happiness_xp = 0, happiness_level = 1 }
+    local threshold = TasteSystem.getLevelThreshold(progression.happiness_level)
+    local summary = TasteSystem.getKnownPreferenceSummary(self.resident)
+
     love.graphics.setFont(Theme.getFont(16))
     love.graphics.print("Current Activity: " .. self.resident.current_activity, 50, 150)
+    love.graphics.print("Happiness Level: " .. progression.happiness_level, 50, 176)
 
-    love.graphics.print("Needs", 50, 200)
     love.graphics.setFont(Theme.getFont(12))
-    local y = 230
+    love.graphics.setColor(0.6, 0.6, 0.6)
+    love.graphics.rectangle("line", 50, 202, 180, 15)
+    love.graphics.setColor(table.unpack(Theme.colors.level_up))
+    love.graphics.rectangle("fill", 50, 202, (progression.happiness_xp / threshold) * 180, 15)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("XP: " .. progression.happiness_xp .. " / " .. threshold, 240, 200)
+
+    love.graphics.setFont(Theme.getFont(16))
+    love.graphics.print("Needs", 50, 232)
+    love.graphics.setFont(Theme.getFont(12))
+    local y = 262
     for key, value in pairs(self.resident.needs) do
         love.graphics.setColor(0.6, 0.6, 0.6)
         love.graphics.rectangle("line", 50, y, 150, 15)
@@ -93,17 +108,24 @@ function ProfileScreen:drawStatus()
     end
 
     love.graphics.setFont(Theme.getFont(16))
-    love.graphics.print("Mood", 450, 200)
+    love.graphics.print("Mood", 450, 150)
     love.graphics.setFont(Theme.getFont(12))
-    y = 230
+    y = 180
     for key, value in pairs(self.resident.mood) do
         love.graphics.print(key .. ": " .. value .. "%", 450, y)
         y = y + 20
     end
 
     love.graphics.setFont(Theme.getFont(14))
-    love.graphics.print("Quirks: " .. table.concat(self.resident.quirks or {}, ", "), 450, 420)
-    love.graphics.print("Likes: " .. table.concat(self.resident.likes or {}, ", "), 450, 450)
+    love.graphics.setColor(table.unpack(Theme.colors.success))
+    love.graphics.print("Known Likes: " .. (#summary.likes > 0 and table.concat(summary.likes, ", ") or "None yet"), 450, 360)
+    love.graphics.setColor(table.unpack(Theme.colors.error))
+    love.graphics.print("Known Dislikes: " .. (#summary.dislikes > 0 and table.concat(summary.dislikes, ", ") or "None yet"), 450, 390)
+    love.graphics.setColor(table.unpack(Theme.colors.text_soft))
+    love.graphics.print("Known Item Notes: " .. (#summary.items > 0 and table.concat(summary.items, ", ") or "None yet"), 450, 420)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("Quirks: " .. table.concat(self.resident.quirks or {}, ", "), 450, 460)
+    love.graphics.print("Likes: " .. table.concat(self.resident.likes or {}, ", "), 450, 490)
 end
 
 function ProfileScreen:drawRelationships()
@@ -152,6 +174,15 @@ function ProfileScreen:drawMemories()
         love.graphics.setColor(1, 1, 1)
         love.graphics.print("Day " .. memory.day .. ": " .. memory.text, 70, y + 10)
         love.graphics.print("Intensity: " .. memory.intensity, 600, y + 10)
+        if memory.type == "gift_reaction" or memory.type == "taste_discovery" then
+            love.graphics.setColor(table.unpack(Theme.colors.accent))
+            love.graphics.print("Gift", 540, y + 10)
+            love.graphics.setColor(1, 1, 1)
+        elseif memory.type == "level_up" then
+            love.graphics.setColor(table.unpack(Theme.colors.level_up))
+            love.graphics.print("Level Up", 520, y + 10)
+            love.graphics.setColor(1, 1, 1)
+        end
         if memory.tags and #memory.tags > 0 then
             love.graphics.setColor(table.unpack(Theme.colors.text_soft))
             love.graphics.print("Tags: " .. table.concat(memory.tags, ", "), 70, y + 26)
