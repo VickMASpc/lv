@@ -1,0 +1,802 @@
+Core Concept: Lua/LÖVE2D Version
+Working Title
+
+Little Lives
+Alternate titles: Apartment Hearts, Tiny Society, Neighborhood Dream
+
+Genre
+
+2D social sandbox / passive life-sim / emergent comedy simulator
+
+The player creates a town of custom residents, gives them homes, items, routines, hobbies, and social nudges, then watches them form friendships, rivalries, crushes, grudges, cliques, scandals, and inside jokes.
+
+The player is not a direct character. They are an unseen caretaker, landlord, producer, or town manager.
+
+LÖVE2D Design Direction
+Visual Style
+
+For LÖVE2D, avoid a true Mode 7 engine early. Use a simpler, cheaper approximation.
+
+Recommended Approach
+
+Use a toy-diorama town map built from:
+
+2D sprites
+fake depth scaling
+camera panning and zooming
+layered parallax
+building billboards
+clickable locations
+optional map rotation later
+
+The town should feel like a miniature playset rather than a full 3D space.
+
+Screens
+
+The game can be structured around clear 2D screens:
+
+Town Map
+Clickable buildings
+Floating mood/problem icons
+time-of-day lighting overlay
+resident movement dots or small sprites
+Apartment View
+side-view or dollhouse room
+resident sprite
+furniture
+thought bubble
+mood/need display
+interaction buttons
+Location View
+café, park, arcade, library, theater, etc.
+residents can appear in small staged social scenes
+Event Popup
+dialogue
+choices
+relationship consequences
+memory creation
+Resident Profile
+readable personality archetype
+likes/dislikes
+relationships
+memories
+public reputation
+
+This is more practical in LÖVE2D than trying to build a complex pseudo-3D overworld first.
+
+Main Gameplay Loop
+
+The loop should remain simple and readable.
+
+Check the town
+Buildings display icons:
+lonely
+hungry
+bored
+angry
+in love
+fighting
+sick
+inspired
+suspicious
+celebrating
+Visit residents
+The player enters a resident’s apartment.
+The resident has:
+mood
+current activity
+thought bubble
+active need
+possible social problem
+Respond
+Give food, clothes, gifts, furniture, medicine, or advice.
+Introduce residents.
+Mediate conflict.
+Encourage or discourage social decisions.
+Trigger social events
+Residents meet, argue, confess, gossip, visit, prank, apologize, or form groups.
+Earn rewards
+Money
+items
+new locations
+resident data
+reputation
+photos/headlines
+customization options
+Observe consequences
+Relationships shift.
+Memories are created.
+Follow-up events enter the queue.
+Expand the town
+Add residents, homes, shops, clubs, festivals, and public spaces.
+MVP Scope for LÖVE2D
+
+The first version should be smaller than the full concept.
+
+MVP Systems
+
+Build these first:
+
+resident creation from simple data
+apartment screen
+town map with clickable buildings
+needs and mood simulation
+pairwise relationship matrix
+event queue
+20 solo events
+20 pair events
+food/gift system
+memory log
+save/load
+basic dialogue templates
+simple day phases
+MVP Relationship Dimensions
+
+Start with only five dimensions:
+
+relationship = {
+  familiarity = 0,
+  affection = 0,
+  trust = 0,
+  attraction = 0,
+  tension = 0
+}
+
+Add later:
+
+respect = 0
+dependence = 0
+history_weight = 0
+
+Do not begin with cliques, gossip, public reputation, babies, elections, or deep group simulation. Those should come after the pair-event engine works.
+
+LÖVE2D Architecture
+
+A good LÖVE2D structure would be:
+
+/main.lua
+
+/src
+  /core
+    state.lua
+    class.lua
+    utils.lua
+    signal.lua
+
+  /systems
+    time_system.lua
+    need_system.lua
+    mood_system.lua
+    relationship_system.lua
+    event_system.lua
+    dialogue_system.lua
+    memory_system.lua
+    save_system.lua
+    location_system.lua
+
+  /screens
+    town_screen.lua
+    apartment_screen.lua
+    location_screen.lua
+    profile_screen.lua
+    event_screen.lua
+    creator_screen.lua
+
+  /ui
+    button.lua
+    panel.lua
+    icon.lua
+    dialogue_box.lua
+    choice_list.lua
+
+  /data
+    residents.lua
+    items.lua
+    quirks.lua
+    locations.lua
+    events_solo.lua
+    events_pair.lua
+    dialogue_templates.lua
+
+LÖVE2D does not impose an entity system, so keep the game modular with plain Lua tables and small systems.
+
+Core Data Model
+Resident
+Resident = {
+  id = "r001",
+  name = "Mina",
+  nickname = "Min",
+  pronouns = "she/her",
+  age_category = "young_adult",
+
+  appearance = {
+    body = "default",
+    hair = "bob_black",
+    outfit = "yellow_hoodie"
+  },
+
+  home_id = "apt_01",
+  current_location = "home",
+  current_activity = "reading",
+
+  personality = {
+    introverted = 65,
+    expressive = 40,
+    private = 70,
+    assertive = 35,
+
+    calm = 45,
+    anxious = 70,
+    forgiving = 55,
+    moody = 60,
+
+    practical = 35,
+    playful = 75,
+    skeptical = 40,
+    chaotic = 65,
+
+    honest = 80,
+    loyal = 75,
+    blunt = 30,
+    empathetic = 85,
+
+    ambitious = 40,
+    adventurous = 55,
+    experimental = 65,
+    spontaneous = 70
+  },
+
+  quirks = {
+    "overthinks_texts",
+    "laughs_at_bad_jokes"
+  },
+
+  likes = {
+    "tea",
+    "music",
+    "rainy_days"
+  },
+
+  dislikes = {
+    "public_embarrassment",
+    "loud_arguments"
+  },
+
+  needs = {
+    hunger = 20,
+    energy = 70,
+    fun = 55,
+    comfort = 60,
+    health = 90,
+
+    belonging = 45,
+    affection = 40,
+    respect = 50,
+    novelty = 65,
+    privacy = 80,
+    validation = 45,
+    stability = 50
+  },
+
+  mood = {
+    happiness = 55,
+    stress = 25,
+    loneliness = 35,
+    anger = 0,
+    embarrassment = 10,
+    excitement = 40,
+    confidence = 50,
+    suspicion = 5,
+    affection = 30
+  },
+
+  memories = {},
+  flags = {}
+}
+Relationship Matrix
+
+Use directed relationship data. Store one object per pair, but include both directions.
+
+Relationship = {
+  a = "r001",
+  b = "r002",
+
+  a_to_b = {
+    familiarity = 30,
+    affection = 45,
+    trust = 35,
+    attraction = 10,
+    respect = 40,
+    dependence = 5
+  },
+
+  b_to_a = {
+    familiarity = 30,
+    affection = 20,
+    trust = 25,
+    attraction = 0,
+    respect = 60,
+    dependence = 0
+  },
+
+  tension = 15,
+  labels = { "acquaintance" },
+  memories = {},
+  unresolved_conflicts = {},
+  last_interaction_phase = 12
+}
+
+This supports one-sided friendships, one-sided crushes, awkward admiration, unequal trust, and asymmetric grudges.
+
+Event System for Lua
+
+Events should be data-driven Lua tables.
+
+Event Example
+return {
+  id = "pair_bad_joke",
+  type = "pair",
+
+  participants = 2,
+  location_tags = { "home", "cafe", "plaza" },
+
+  cooldown = 3,
+
+  preconditions = function(world, a, b)
+    local rel = world.relationships:get(a.id, b.id)
+    return rel
+      and rel.a_to_b.familiarity > 10
+      and a.mood.stress < 80
+  end,
+
+  weight = function(world, a, b)
+    local rel = world.relationships:get(a.id, b.id)
+    local weight = 10
+
+    if a.personality.playful > 60 then
+      weight = weight + 20
+    end
+
+    if b.personality.serious and b.personality.serious > 60 then
+      weight = weight + 15
+    end
+
+    if rel.tension > 40 then
+      weight = weight + 10
+    end
+
+    return weight
+  end,
+
+  run = function(world, a, b)
+    return {
+      title = "Bad Joke",
+      text = a.name .. " made a joke about " .. b.name .. ". It did not land.",
+
+      choices = {
+        {
+          label = "Tell them it was harmless",
+          effect = function()
+            world.relationships:add_tension(a.id, b.id, 3)
+            world.mood:add(b.id, "embarrassment", 5)
+          end
+        },
+        {
+          label = "Tell " .. a.name .. " to apologize",
+          effect = function()
+            world.relationships:add_trust(b.id, a.id, 4)
+            world.relationships:add_tension(a.id, b.id, -5)
+          end
+        }
+      },
+
+      memory = {
+        type = "embarrassment",
+        participants = { a.id, b.id },
+        tags = { "joke", "awkward", "public" },
+        intensity = 35,
+        decay = "medium"
+      }
+    }
+  end
+}
+
+This style fits LÖVE2D well because it avoids external tooling and keeps iteration fast.
+
+Simulation Tick
+
+Do not simulate constantly every frame. Use phase ticks.
+
+Recommended Time Model
+
+Each in-game day has four phases:
+
+phases = {
+  "morning",
+  "afternoon",
+  "evening",
+  "night"
+}
+
+On each phase change:
+
+decay needs
+update mood
+process memories
+update relationships lightly
+generate possible events
+queue visible prompts
+move residents between locations
+
+Example:
+
+function TimeSystem:advancePhase(world)
+  world.phase_index = world.phase_index + 1
+
+  if world.phase_index > 4 then
+    world.phase_index = 1
+    world.day = world.day + 1
+  end
+
+  NeedSystem.update(world)
+  MoodSystem.update(world)
+  MemorySystem.decay(world)
+  LocationSystem.assignActivities(world)
+  EventSystem.generate(world)
+end
+
+This is much easier to debug than real-time continuous simulation.
+
+Event Queue
+
+Use an event queue rather than instantly resolving everything.
+
+world.event_queue = {
+  {
+    id = "solo_hungry",
+    priority = 70,
+    participants = { "r001" },
+    location = "apt_01",
+    requires_player = true
+  },
+  {
+    id = "pair_argument",
+    priority = 90,
+    participants = { "r002", "r005" },
+    location = "cafe",
+    requires_player = true
+  }
+}
+
+Major outcomes should wait for the player:
+
+breakup
+confession
+move-in
+rivalry escalation
+public scandal
+commitment ceremony
+resident leaving town
+
+Minor outcomes can resolve automatically:
+
+small chats
+casual mood shifts
+hunger decay
+friendship drift
+hobby activity
+routine visits
+Dialogue System
+
+Use templates with personality variants.
+
+DialogueTemplates = {
+  awkward_intro = {
+    shy = "I tried talking to {target}, but I think I made it weird.",
+    dramatic = "I have socially detonated myself in front of {target}.",
+    blunt = "I talked to {target}. Badly.",
+    poetic = "My words became soup and {target} had to drink it.",
+    default = "I tried talking to {target}, but it got awkward."
+  }
+}
+
+A resolver function can choose the best line:
+
+function DialogueSystem:get(template_id, speaker, vars)
+  local template = DialogueTemplates[template_id]
+  local style = self:getStyleForResident(speaker)
+  local line = template[style] or template.default
+
+  for key, value in pairs(vars or {}) do
+    line = line:gsub("{" .. key .. "}", value)
+  end
+
+  return line
+end
+
+The goal is not infinite dialogue. The goal is specific-feeling reusable dialogue.
+
+Mood and Needs
+Needs
+
+Keep values from 0–100.
+
+needs = {
+  hunger = 0,
+  energy = 80,
+  fun = 40,
+  comfort = 60,
+  health = 90,
+  belonging = 50,
+  affection = 35,
+  respect = 55,
+  novelty = 45,
+  privacy = 70,
+  validation = 40,
+  stability = 60
+}
+
+A low need can create a problem event.
+
+Example:
+
+if resident.needs.hunger < 20 then
+  EventSystem:queue("solo_hungry", resident.id, 60)
+end
+Mood
+
+Mood should be multi-axis, not a single happiness meter.
+
+mood = {
+  happiness = 50,
+  stress = 20,
+  loneliness = 10,
+  anger = 0,
+  embarrassment = 0,
+  excitement = 30,
+  confidence = 50,
+  suspicion = 0,
+  affection = 20
+}
+
+This lets a resident be:
+
+happy but stressed
+angry but affectionate
+lonely but confident
+embarrassed but excited
+
+That produces better events.
+
+Relationship Logic
+
+Use small relationship changes often, large changes rarely.
+
+Example Helpers
+function RelationshipSystem:addAffection(world, from_id, to_id, amount)
+  local rel = world.relationships:getDirected(from_id, to_id)
+  rel.affection = clamp(rel.affection + amount, 0, 100)
+end
+
+function RelationshipSystem:addTension(world, a_id, b_id, amount)
+  local rel = world.relationships:get(a_id, b_id)
+  rel.tension = clamp(rel.tension + amount, 0, 100)
+end
+Labels Are Derived
+
+Do not manually set every label. Derive them from relationship values.
+
+function RelationshipSystem:getLabel(rel, from, to)
+  local r = rel:getDirection(from, to)
+
+  if r.attraction > 70 and r.affection > 60 then
+    return "crush"
+  end
+
+  if r.affection > 80 and r.trust > 70 then
+    return "close_friend"
+  end
+
+  if rel.tension > 70 and r.affection < 30 then
+    return "rival"
+  end
+
+  if r.familiarity < 10 then
+    return "stranger"
+  end
+
+  return "acquaintance"
+end
+
+This keeps the simulation coherent.
+
+Memory System
+
+Every significant social change should create a memory.
+
+Memory = {
+  id = "m00045",
+  type = "embarrassment",
+  participants = { "r001", "r002" },
+  location = "plaza",
+  text = "Mina laughed at Theo's serious speech.",
+  emotion = {
+    embarrassment = 60,
+    affection = -5,
+    tension = 15
+  },
+  tags = { "public", "speech", "awkward" },
+  created_day = 12,
+  decay = "slow",
+  intensity = 70
+}
+
+Memories can affect future event weights.
+
+if MemorySystem:hasRecentTag(resident, "awkward") then
+  weight = weight + 10
+end
+
+This is the backbone of callbacks, grudges, and inside jokes.
+
+Save/Load
+
+Use JSON.
+
+Recommended structure:
+
+/save
+  slot1.json
+
+Save:
+
+world = {
+  day = 12,
+  phase = "evening",
+  money = 450,
+  residents = {},
+  relationships = {},
+  memories = {},
+  inventory = {},
+  unlocked_locations = {},
+  event_queue = {}
+}
+
+In LÖVE2D, use:
+
+love.filesystem.write("slot1.json", json.encode(world))
+
+and:
+
+local data = love.filesystem.read("slot1.json")
+world = json.decode(data)
+
+You will need a Lua JSON library such as dkjson, lunajson, or json.lua.
+
+Rendering Model
+
+Use a basic screen manager.
+
+Game = {
+  current_screen = nil,
+  screens = {}
+}
+
+function Game:switch(screen_name, params)
+  self.current_screen = self.screens[screen_name]
+  self.current_screen:enter(params)
+end
+
+function love.update(dt)
+  Game.current_screen:update(dt)
+end
+
+function love.draw()
+  Game.current_screen:draw()
+end
+
+function love.mousepressed(x, y, button)
+  Game.current_screen:mousepressed(x, y, button)
+end
+
+This keeps the project manageable.
+
+Town Map MVP
+
+The map should be a clickable board, not a full simulation space.
+
+Each location:
+
+Location = {
+  id = "cafe",
+  name = "Café",
+  x = 420,
+  y = 260,
+  sprite = "building_cafe",
+  tags = { "food", "social", "date" },
+  unlocked = true,
+  residents_present = {},
+  alerts = {}
+}
+
+Draw alert icons over buildings:
+
+for _, alert in ipairs(location.alerts) do
+  drawIcon(alert.icon, location.x, location.y - 32)
+end
+
+This supports the “check the town” loop with minimal engine complexity.
+
+Player Tools
+
+For the MVP, include a compact toolset.
+
+Direct Tools
+give food
+give gift
+give clothing
+give furniture
+give medicine
+introduce resident
+suggest activity
+advise apology
+encourage confession
+discourage confession
+mediate conflict
+Later Tools
+create club
+assign roommates
+organize festival
+publish town newspaper
+set holidays
+manipulate seating charts
+anonymous gift
+fake rumor
+town challenge
+
+For LÖVE2D, each tool can be represented as a button action that calls a system function.
+
+Recommended Development Milestones
+Milestone 1: Static Town
+draw town map
+clickable apartments
+apartment screen
+one resident visible
+basic UI buttons
+Milestone 2: Resident Data
+load residents from Lua tables
+show profile
+display needs and mood
+save/load residents
+Milestone 3: Needs and Phase Time
+morning/afternoon/evening/night
+needs decay
+mood updates
+problem icons appear
+Milestone 4: Solo Events
+20 solo problems
+player choices
+rewards
+memory creation
+Milestone 5: Relationships
+pairwise relationship matrix
+introductions
+friendship labels
+relationship profile screen
+Milestone 6: Pair Events
+20 pair events
+affection/trust/attraction/tension changes
+arguments
+apologies
+crushes
+awkward scenes
+Milestone 7: Persistence
+save/load world state
+save memories
+save relationships
+restore event queue
+Milestone 8: Comedy Layer
+dialogue variants
+resident-specific reactions
+photo/headline archive
+recurring jokes from memories
