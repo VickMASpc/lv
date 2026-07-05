@@ -89,6 +89,15 @@ local function normalizeResident(raw)
     resident.discovered_preferences = resident.discovered_preferences or {}
     resident.current_location = resident.current_location or resident.home_id
     resident.current_activity = resident.current_activity or "resting"
+    
+    resident.problem_bubble = resident.problem_bubble or {
+        active = false,
+        type = nil,
+        created_day = nil,
+        created_phase = nil,
+        target_item_tag = nil
+    }
+
     RenderSystem.initResident(resident)
     return resident
 end

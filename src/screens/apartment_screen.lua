@@ -127,6 +127,23 @@ function ApartmentScreen:giveItem(index, item)
         return
     end
 
+    local ProblemSystem = require("src.systems.problem_system")
+    local success, message
+    
+    if self.resident.problem_bubble and self.resident.problem_bubble.active then
+        success, message = ProblemSystem.resolve(self.mgr.world, self.resident, item)
+        if success then
+            table.remove(self.mgr.world.inventory, index)
+            self:enter({ location_id = self.location_id })
+            self.status_message = message
+            self.status_color = Theme.colors.success
+        else
+            self.status_message = message
+            self.status_color = Theme.colors.warning
+        end
+        return
+    end
+
     local result = HappinessSystem.applyGift(self.mgr.world, self.resident, item)
 
     table.remove(self.mgr.world.inventory, index)
@@ -234,6 +251,16 @@ function ApartmentScreen:draw()
         love.graphics.setFont(Theme.getFont(22))
         love.graphics.setColor(0.70, 0.70, 0.75)
         love.graphics.print("Empty Apartment", 20, 14)
+    end
+    
+    if res and res.problem_bubble and res.problem_bubble.active then
+        love.graphics.setFont(Theme.getFont(14))
+        love.graphics.setColor(table.unpack(Theme.colors.warning))
+        if res.problem_bubble.type == "hungry" then
+            love.graphics.printf(res.name .. " is hungry! They want something to eat.", 30, 275, 480, "center")
+        else
+            love.graphics.printf(res.name .. " has a problem!", 30, 275, 480, "center")
+        end
     end
 
     if res then
